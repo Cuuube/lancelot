@@ -1,4 +1,6 @@
 .vscode/
 result/
+json_example/
 
 *.pyc
+.Ds_store

@@ -10,6 +10,6 @@ from lancelot.models import Media
 class LancelotPipeline(object):
     def process_item(self, item, spider):
         # TODO 存到数据库
-        # Media.insert()
-        print item
+        # print item
+        Media.insert(**item)
         return item

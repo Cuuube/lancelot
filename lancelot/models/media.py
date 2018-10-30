@@ -3,51 +3,48 @@
 from mongoengine import connect, Document, StringField, IntField
 
 class Media(Document):
-    MediaName         = StringField(required=True)
-    MediaSnapshot     = StringField(required=True)
-    MediaDescription  = StringField()
-    MediaLink         = StringField(required=True)
-    PlayedCount       = IntField()   
-    Likes             = IntField()   
-    UploadTime        = IntField()   
-    Uploader          = StringField()
-    UploaderAvatar    = StringField()
-    UploaderSpaceLink = StringField()
-    CheckTime         = IntField(required=True)   
-    channel           = StringField(required=True)
-    FromWebsite       = StringField(required=True)
+    media_name         = StringField(required=True)
+    media_snapshot     = StringField(required=True)
+    media_description  = StringField()
+    media_link         = StringField(required=True)
+    played_count       = IntField()   
+    likes              = IntField()   
+    upload_time        = IntField()   
+    uploader           = StringField()
+    uploader_avatar    = StringField()
+    uploader_spaceLink = StringField()
+    check_time         = IntField(required=True)   
+    channel            = StringField(required=True)
+    from_website       = StringField(required=True)
+    original_id       = StringField()
 
     # meta = {'db_alias': 'bookstore'}
 
     @classmethod
     def insert(cls, **kwargs):
-        pass
+        original_id = kwargs.get('original_id', None)
+        # print('-------!!!', kwargs, original_id)
 
-    # @classmethod
-    # def write(cls, **kwargs):
-        # name = kwargs.get('name', None)
-        # print('-------!!!', kwargs, name)
+        foundItem = cls.objects(original_id=original_id).first()
 
+        print foundItem
 
-        # foundItem = Bookstore.objects(name=name).first()
-
-        # print foundItem
-
-        # if name:
-        #     document_data = {
-        #         'name': kwargs.get('name'),
-        #         'pages': kwargs.get('pages'),
-        #         'price': kwargs.get('price'),
-        #         'author': kwargs.get('author'),
-        #         'url': kwargs.get('url'),
-        #     }
-        #     if foundItem:
-        #         # update
-        #         foundItem.update(**document_data)
-        #     else:
-        #         # insert
-        #         bs = Bookstore(**document_data)
-        #         bs.save()
+        if original_id:
+            document_data = kwargs
+            # {
+            #     'name': kwargs.get('name'),
+            #     'pages': kwargs.get('pages'),
+            #     'price': kwargs.get('price'),
+            #     'author': kwargs.get('author'),
+            #     'url': kwargs.get('url'),
+            # }
+            if foundItem:
+                # update
+                foundItem.update(**document_data)
+            else:
+                # insert
+                bs = cls(**document_data)
+                bs.save()
 
         
 

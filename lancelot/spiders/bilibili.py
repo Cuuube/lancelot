@@ -1,63 +1,60 @@
 # -*- coding: utf-8 -*-
+import time
 import scrapy
 
 from lancelot.utils import jsonp2Dict
+from lancelot.utils.common import MEDIA_BIZHAN, CALLBACK_NAME, BILI_CHANNAL_RIDS, BILI_VIDEO_LINK, BILI_SPACE_LINK
 
-CALLBACK_NAME = 'GETDAZE'
-
+PER_PAGE = 100
 class BilibiliSpider(scrapy.Spider):
     name = 'bilibili'
     allowed_domains = ['www.bilibili.com']
-    start_urls = [
-        'https://api.bilibili.com/x/web-interface/dynamic/region?callback=' + CALLBACK_NAME + '&jsonp=jsonp&ps=5&rid=1'
-    ]
+    dynamic_url = 'https://api.bilibili.com/x/web-interface/dynamic/region?callback=' + CALLBACK_NAME + '&jsonp=jsonp&ps=' + str(PER_PAGE) + '&rid={}' # 首页推荐
+    # ranking_url = 'https://api.bilibili.com/x/web-interface/ranking/region?callback=' + CALLBACK_NAME + '&rid={}&day=7&original=0&jsonp=jsonp' # TODO 排行榜
+    # start_urls = []
 
     def start_requests(self):
-        for url in self.start_urls:
+        for rid in BILI_CHANNAL_RIDS:
+            url = self.dynamic_url.format(rid)
             print url
             yield scrapy.Request(
                 url,
-                callback=self.get_data,
+                callback=self.dynamic_get_data,
                 headers={
                     'Referer': 'https://www.bilibili.com/'
                 },
                 # cookies={},
             )
 
-    def parse(self, response):
-        for link in response.css('ul li a::attr(href)').extract():
-            # print link
-            url = response.urljoin(link)
-            # print('--------', url)
-
-            yield scrapy.Request(
-                url,
-                callback=self.get_data,
-                headers={
-                    'Referer': 'https://www.bilibili.com/'
-                },
-                # cookies={},
-            )
-
-    def get_data(self, response):
+    def dynamic_get_data(self, response):
         data = jsonp2Dict(response.body, CALLBACK_NAME)
-
-        # data = {
-        #     'name': response.css('h1::text').extract()[0],
-        #     # 'author': response.css('div p::text').extract()[0],
-        #     'author': response.css('div p::text')[0].re(':\s?([\w\s]*)')[0],
-        #     # 'price': response.css('div p::text').extract()[1],
-        #     'price': response.css('div p::text')[1].re(':\s?(\d*)')[0],
-        #     # 'pages': response.css('div p::text').extract()[2],
-        #     'pages': response.css('div p::text')[2].re(':\s?(\d*)')[0],
-        #     'url': response.url,
-        # }
-        print '------------'
-        print data
-        print '------------'
-
+        # print '------------'
         # print data
-        yield data
+        # print '------------'
+        try:
+            for archive in data['data']['archives']:
+                stat_info = archive.get('stat', {})
+                uploader_info = archive.get('owner', {})
+                result = {
+                    'media_name'         : archive.get('title'),
+                    'media_snapshot'     : archive.get('pic'),
+                    'media_description'  : archive.get('desc'),
+                    'media_link'         : BILI_VIDEO_LINK.format(archive.get('aid')), # 用哔站规则组合
+                    'played_count'       : stat_info.get('view'),
+                    'likes'              : stat_info.get('like'),
+                    'upload_time'        : archive.get('pubdate'),
+                    'uploader'           : uploader_info.get('name'),
+                    'uploader_avatar'    : uploader_info.get('face'),
+                    'uploader_spaceLink' : BILI_SPACE_LINK.format(uploader_info.get('mid')), # 组合
+                    'check_time'         : int(time.time()), # 抓取时间，取当前时间
+                    'channel'            : archive.get('tname'),
+                    'from_website'       : MEDIA_BIZHAN,
+                    'original_id'        : str(archive.get('aid')),
+                }
+                yield result
+        except Exception as e:
+            print e
+            pass
 
 '''
 有用的东西：
